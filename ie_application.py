@@ -1,10 +1,13 @@
-import en_core_web_sm
+import spacy
 from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk import pos_tag, Tree
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import wordnet
 
+import nltk
+nltk.download('averaged_perceptron_tagger_eng')
+nltk.download('punkt')
 
 # Tokenize sentences
 def tokenize_sentence(paragraph):
@@ -21,14 +24,27 @@ def tokenize_words(sentence):
 
 
 # Lemmatize the words to extract lemma as features
+def get_wordnet_pos(tag):
+    if tag.startswith('J'):
+        return wordnet.ADJ
+    elif tag.startswith('V'):
+        return wordnet.VERB
+    elif tag.startswith('N'):
+        return wordnet.NOUN
+    elif tag.startswith('R'):
+        return wordnet.ADV
+    else:
+        return wordnet.NOUN
+
 def lemmatize_words(sentences):
     lemma_list = []
+    words = word_tokenize(sentences)
+    pos_tags = pos_tag(words)
     lemmatizer = WordNetLemmatizer()
 
-    for words in sentences:
-        for w in words:
-            lemma = lemmatizer.lemmatize(w, 'v')
-            lemma_list.append(lemma)
+    lemmatized_words = [lemmatizer.lemmatize(word, get_wordnet_pos(tag)) for word, tag in pos_tags]
+
+    lemma_list.append(lemmatized_words)
 
     return lemma_list
 
@@ -393,7 +409,7 @@ def extract_duration_relation(doc):
 input_sentence = input("Enter your sentence here:: ")
 print("\nSentence :: ", input_sentence)
 
-nlp = en_core_web_sm.load()
+nlp = spacy.load("en_core_web_sm")
 doc_nlp = nlp((str)(input_sentence))
 
 sentences = []
@@ -413,10 +429,10 @@ while choice != '0':
             words.append(tokenize_words(sentence))
         print("Tokenization :: ", words)
     elif choice == '2':
-        lemmas = lemmatize_words(words)
+        lemmas = lemmatize_words(input_sentence)
         print("Lemmatization :: ", lemmas)
     elif choice == '3':
-        pos_tags = get_pos_tags(lemmas)
+        pos_tags = get_pos_tags(word_tokenize(input_sentence))
         print("POS Tagging :: ", pos_tags)
     elif choice == '4':
         nltk_tree = [generate_parse_tree(sent.root).pretty_print() for sent in doc_nlp.sents]
